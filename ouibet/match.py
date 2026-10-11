@@ -51,6 +51,9 @@ def attach(events, refs, threshold=0.6):
     for r in refs:
         by_date.setdefault(r["date"], []).append(r)
     for e in events:
+        # appels successifs : la première source qui matche gagne (direct avant vendredi)
+        if "ref" in e:
+            continue
         # la référence ne couvre que les équipes premières seniors masculines
         if NOT_SENIOR.search(f"{e['league']} {e['home']} {e['away']}"):
             continue

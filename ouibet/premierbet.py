@@ -53,3 +53,35 @@ def events():
     comps = list(competitions())
     with ThreadPoolExecutor(8) as ex:
         return [e for evs in ex.map(_events, comps) for e in evs]
+
+
+def markets(event_id):
+    """Tous les paris d'un match : liste de {market, name, line, odds}."""
+    url = f"{API}/events/{event_id}?{PARAMS}"
+    try:
+        d = get_json(url, ttl=600, headers=HEADERS)
+    except Exception:
+        return []
+    out, seen = [], set()
+    for g in d.get("marketGroups", []):
+        for m in g.get("markets", []):
+            if not m.get("active"):
+                continue
+            for o in m.get("outcomes", []):
+                key = (m["name"], o["name"], o.get("handicap"))
+                if not o.get("active") or key in seen:
+                    continue
+                seen.add(key)
+                try:
+                    out.append({"market": m["name"], "name": o["name"], "line": o.get("handicap"),
+                                "odds": float(o["value"])})
+                except (TypeError, ValueError):
+                    pass
+    return out
+
+
+def attach_markets(events):
+    with ThreadPoolExecutor(8) as ex:
+        for e, ms in zip(events, ex.map(lambda e: markets(e["id"]), events)):
+            e["markets"] = ms
+    return events

@@ -62,6 +62,13 @@ def fixtures():
             if not (home and away and probs):
                 continue
             p = [sum(x[i] for x in probs) / len(probs) for i in range(3)]
-            out.append({"home": home, "away": away, "date": date,
-                        "p": {"1": p[0], "X": p[1], "2": p[2]}, "sources": len(probs)})
+            p = {"1": p[0], "X": p[1], "2": p[2]}
+            overs = []
+            for pre in ("BFE", "Avg"):
+                o = [_num(row, f"{pre}>2.5"), _num(row, f"{pre}<2.5")]
+                if all(o) and 0.97 <= sum(1 / x for x in o) <= 1.12:
+                    overs.append(devig(o)[0])
+            if overs:
+                p["O2.5"] = sum(overs) / len(overs)
+            out.append({"home": home, "away": away, "date": date, "p": p, "src": "vendredi (football-data)"})
     return out

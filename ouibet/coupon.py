@@ -129,7 +129,21 @@ def legs(events, ref_only=False, families=tuple(FAMILIES), keep_suspects=False):
     return out
 
 
+LADDER = [1.3, 1.6, 2, 3, 5, 10, 25, 100, 1000, 10000]
+RISK = [(0.60, "sur"), (0.25, "modere"), (0.05, "risque"), (0.0, "tres_risque")]
+
+
+def risk(p):
+    return next(name for floor, name in RISK if p >= floor)
+
+
 def build(legs, target, max_legs=12, max_odds=None, pool=150, per_match=6, exclude=()):
+    return build_many(legs, [target], max_legs, max_odds, pool, per_match, exclude)[target]
+
+
+def build_many(legs, targets, max_legs=12, max_odds=None, pool=150, per_match=6, exclude=()):
+    """Pour chaque cote visée, la combinaison la plus probable qui l'atteint (un seul passage de calcul)."""
+    targets = sorted(set(targets))
     cands = [l for l in legs if l["odds"] > 1.01 and (max_odds is None or l["odds"] <= max_odds)
              and l["key"] not in exclude]
     # garder les paris les plus "efficaces" (peu de probabilité perdue par unité de cote gagnée)
@@ -144,30 +158,42 @@ def build(legs, target, max_legs=12, max_odds=None, pool=150, per_match=6, exclu
         if len(groups[seen[l["key"]]]) < per_match:  # les plus efficaces d'abord (tri ci-dessus)
             groups[seen[l["key"]]].append(l)
 
-    B = math.ceil(math.log(target) / STEP)
+    B = math.ceil(math.log(max(targets)) / STEP)
     INF = float("inf")
-    # dp[n][b] = (coût minimal, liste de paris) avec n paris et b paliers de cote (plafonné à B)
+    # dp[n][b] = (coût minimal, paris) avec n paris et b paliers de log-cote (plafonné à la plus grande cible)
     dp = [[(INF, None)] * (B + 1) for _ in range(max_legs + 1)]
     dp[0][0] = (0.0, ())
     for g in groups:
+        moves = [(int(math.log(l["odds"]) / STEP), -math.log(l["p"]), l) for l in g]
         new = [row[:] for row in dp]
         for n in range(max_legs):
+            row, nrow = dp[n], new[n + 1]
             for b in range(B + 1):
-                c, chosen = dp[n][b]
+                c, chosen = row[b]
                 if chosen is None:
                     continue
-                for l in g:
-                    nb = min(B, b + int(math.log(l["odds"]) / STEP))
-                    nc = c - math.log(l["p"])
-                    if nc < new[n + 1][nb][0]:
-                        new[n + 1][nb] = (nc, chosen + (l,))
+                for step, cost, l in moves:
+                    nb = min(B, b + step)
+                    nc = c + cost
+                    if nc < nrow[nb][0]:
+                        nrow[nb] = (nc, chosen + (l,))
         dp = new
-    best = min((dp[n][B] for n in range(1, max_legs + 1)), key=lambda x: x[0])
-    if best[1] is None:
-        return None
-    sel = sorted(best[1], key=lambda l: l["event"]["start"])
-    odds = math.prod(l["odds"] for l in sel)
-    if odds < target:  # arrondi des paliers : on vérifie quand même
-        return None
-    return {"legs": sel, "odds": odds, "p": math.prod(l["p"] for l in sel),
-            "p_book": math.prod(1 / l["odds"] for l in sel)}
+    # meilleur état atteignant au moins chaque palier, en balayant de la plus grande cote vers la plus petite
+    out, best = {}, (INF, None)
+    suffix = [None] * (B + 1)
+    for b in range(B, -1, -1):
+        for n in range(1, max_legs + 1):
+            if dp[n][b][0] < best[0]:
+                best = dp[n][b]
+        suffix[b] = best
+    for t in targets:
+        c = suffix[math.ceil(math.log(t) / STEP)] if t > 1 else None
+        out[t] = None
+        if c and c[1] is not None:
+            sel = sorted(c[1], key=lambda l: l["event"]["start"])
+            odds = math.prod(l["odds"] for l in sel)
+            if odds >= t:  # arrondi des paliers : on vérifie quand même
+                p = math.prod(l["p"] for l in sel)
+                out[t] = {"legs": sel, "odds": odds, "p": p, "p_book": math.prod(1 / l["odds"] for l in sel),
+                          "risk": risk(p)}
+    return out

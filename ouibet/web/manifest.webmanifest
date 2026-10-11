@@ -1,0 +1,11 @@
+{
+  "name": "ouibet",
+  "short_name": "ouibet",
+  "description": "Coupons cumulés PremierBet optimisés sur la vraie probabilité",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1210",
+  "theme_color": "#0b1210",
+  "lang": "fr",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

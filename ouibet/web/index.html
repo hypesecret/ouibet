@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ouibet</title>
+<meta name="theme-color" content="#0b1210">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon.svg">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><img src="/icon.svg" alt=""><span>ouibet</span></div>
+  <button id="refresh" class="ghost" title="Actualiser les cotes">Actualiser</button>
+</header>
+<div id="banner" class="banner" hidden></div>
+
+<main>
+  <!-- COUPON -->
+  <section id="tab-coupon" class="tab active">
+    <form id="form" class="card form">
+      <label class="field">
+        <span>Combien tu mises ?</span>
+        <div class="money"><input id="mise" type="number" inputmode="numeric" min="1" step="any"><em>FCFA</em></div>
+      </label>
+
+      <div class="field">
+        <span>Type de pari</span>
+        <div class="chips single" id="mode">
+          <button type="button" data-v="combine">Combiné</button>
+          <button type="button" data-v="simple">Simple (1 match)</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <span>Matchs</span>
+        <div class="chips single" id="period">
+          <button type="button" data-v="today">Aujourd'hui</button>
+          <button type="button" data-v="tomorrow">Demain</button>
+          <button type="button" data-v="all">Tout</button>
+          <button type="button" data-v="weekend">Week-end</button>
+        </div>
+      </div>
+
+      <details class="more">
+        <summary>Réglages</summary>
+        <div class="field">
+          <span>Style</span>
+          <div class="chips single" id="style">
+            <button type="button" data-v="best">Meilleure chance</button>
+            <button type="button" data-v="favorites">Favoris uniquement</button>
+          </div>
+        </div>
+        <label class="field">
+          <span>Cote max par match en style favoris : <b id="maxOddsVal"></b></span>
+          <input id="maxOdds" type="range" min="1.2" max="3" step="0.05">
+        </label>
+        <label class="field">
+          <span>Une cote précise en tête ? (facultatif)</span>
+          <div class="money"><em>x</em><input id="custom" type="number" inputmode="decimal" min="1.01" step="any" placeholder="ex. 7,5"></div>
+        </label>
+        <div class="field">
+          <span>Types de paris</span>
+          <div class="chips" id="families"></div>
+        </div>
+        <label class="check"><input id="refOnly" type="checkbox"> Seulement les matchs avec une référence marché</label>
+        <label class="check"><input id="keepSuspects" type="checkbox"> Garder les matchs « suspects » (cote qui a bougé)</label>
+      </details>
+
+      <button class="primary" type="submit">Voir les possibilités</button>
+    </form>
+
+    <div id="excluded" class="excluded" hidden></div>
+    <div id="results"></div>
+    <p class="fine">Jeu d'argent : même un bon coupon perd la plupart du temps. Ne mise que ce que tu peux perdre.</p>
+  </section>
+
+  <!-- VALEURS -->
+  <section id="tab-values" class="tab">
+    <div class="card intro">Paris où PremierBet paie <b>plus</b> que ce que vaut le résultat selon le marché. C'est ici qu'est le seul vrai avantage.</div>
+    <div id="values"></div>
+  </section>
+
+  <!-- MATCHS -->
+  <section id="tab-matches" class="tab">
+    <div class="chips single scroll" id="days"></div>
+    <input id="search" class="search" type="search" placeholder="Équipe ou championnat">
+    <div id="matches"></div>
+  </section>
+
+  <!-- ÉTAT -->
+  <section id="tab-status" class="tab">
+    <div id="status"></div>
+  </section>
+</main>
+
+<nav class="bottom">
+  <button data-tab="coupon" class="active"><svg viewBox="0 0 24 24"><path d="M4 5h16v4a2 2 0 0 0 0 4v4H4v-4a2 2 0 0 0 0-4z"/></svg>Coupon</button>
+  <button data-tab="values"><svg viewBox="0 0 24 24"><path d="M4 18l5-6 4 3 7-9"/></svg>Valeurs</button>
+  <button data-tab="matches"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4v4M12 16v4M4 12h4M16 12h4"/></svg>Matchs</button>
+  <button data-tab="status"><svg viewBox="0 0 24 24"><path d="M12 3v9l5 3"/><circle cx="12" cy="12" r="9"/></svg>État</button>
+</nav>
+
+<template id="tpl-coupon">
+  <details class="card coupon">
+    <summary>
+      <div class="line1"><span class="target"></span><span class="gain"></span></div>
+      <div class="line2"><span class="chance"></span><span class="count"></span></div>
+    </summary>
+    <ol class="legs"></ol>
+    <footer>
+      <div class="sum"></div>
+      <div class="actions">
+        <button class="ghost news-btn">Vérifier les news</button>
+        <button class="ghost copy-btn">Copier</button>
+        <button class="ghost share-btn" hidden>Partager</button>
+      </div>
+    </footer>
+  </details>
+</template>
+
+<script src="/app.js"></script>
+</body>
+</html>
